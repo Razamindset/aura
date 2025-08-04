@@ -1,30 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin
-import re
-
-def extract_links(soup: BeautifulSoup, base_url):
-    links = []
-    for a in soup.find_all("a", href=True):
-
-        href = a["href"]
-
-        # We wanna skip these ones
-        if href.startswith("#") or href.startswith("javascript"):
-            continue
-
-        absolute_url = urljoin(base_url, href)
-        
-        links.append(absolute_url)
-    
-    return links
-
-def extract_words(soup: BeautifulSoup) -> list[str]:
-    raw_text = soup.get_text(separator=" ")
-    clean_text = re.sub(r"[^a-zA-Z0-9\s]", "", raw_text)
-    clean_text = clean_text.lower()
-    words = clean_text.split()
-    return words
+from utils.helpers import save_page_data, extract_links, extract_words
 
 def crawl_page(url: str)-> dict:
     try:
@@ -48,4 +24,27 @@ def crawl_page(url: str)-> dict:
         "words": words,
     }
 
-print(crawl_page("https://www.wikipedia.org/"))
+def crawl_many(seed_url: str, max_pages: int = 10):
+    visited = set()
+    queue = [seed_url]
+    
+    while queue and len(visited) < max_pages:
+        url = queue.pop()
+        
+        if url in visited:
+            continue
+        
+        print(f"[{len(visited) + 1}] Crawling: {url}")
+        page = crawl_page(url)
+        
+        if not page:
+            continue
+        
+        save_page_data(page)
+        visited.add(url)
+        
+        for link in page['links']:
+            if link not in visited and link not in queue:
+                queue.append(link)
+
+crawl_many("https://en.wikipedia.org/", max_pages=10)
