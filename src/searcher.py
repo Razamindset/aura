@@ -1,4 +1,5 @@
 import json
+from collections import defaultdict
 
 def load_index(filepath="index.json"):
     with open(filepath, "r", encoding="utf-8") as f:
@@ -6,14 +7,16 @@ def load_index(filepath="index.json"):
     
 def search(query: str, index: dict):
     words = query.lower().split()
-    results = set()
+    scores = defaultdict(int)
     
     for word in words:
         if word in index:
-            results.update(index[word])  # Union of all matches
+            for url, freq in index[word].items():
+                scores[url] += freq  # Higher freq = more relevant
+    
+    ranked = sorted(scores.items(),  key=lambda x: x[1], reverse=True)
 
-    return list(results)
-
+    return ranked
 
 index = load_index("index.json")
 
@@ -22,10 +25,10 @@ while True:
     if query.lower() in ["exit", "quit"]:
         break
 
-    matches = search(query, index)
+    matches = search("python search", index)
+
     if matches:
-        print(f"\nFound {len(matches)} results:")
-        for url in matches:
-            print(f" - {url}")
+        for url, score in matches:
+            print(f"{url}  (score: {score})")
     else:
-        print("No results found.\n")
+        print("No results.")

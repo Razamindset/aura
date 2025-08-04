@@ -4,6 +4,7 @@ import json
 from bs4 import BeautifulSoup
 import re
 from urllib.parse import urljoin
+from collections import Counter
 
 def extract_links(soup: BeautifulSoup, base_url):
     links = []
@@ -28,7 +29,7 @@ STOP_WORDS = set([
     "can", "could", "should", "shall", "not"
 ])
 
-def extract_words(soup: BeautifulSoup) -> list[str]:
+def extract_words(soup: BeautifulSoup) -> dict:
     raw_text = soup.get_text(separator=" ")
     clean_text = re.sub(r"[^a-zA-Z0-9\s]", "", raw_text)
     clean_text = clean_text.lower()
@@ -39,7 +40,7 @@ def extract_words(soup: BeautifulSoup) -> list[str]:
         word for word in words
         if word not in STOP_WORDS and len(word) >= 3
     ]
-    return filtered
+    return dict(Counter(filtered))
 
 def save_page_data(page_data: dict, output_directory: str = "output"):
     os.makedirs(output_directory, exist_ok=True)

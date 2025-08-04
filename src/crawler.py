@@ -14,14 +14,14 @@ def crawl_page(url: str)-> dict:
     
     title = soup.title.string if soup.title else ""
     links = extract_links(soup, url)
-    words = extract_words(soup)
+    words_freq = extract_words(soup)
     
     
     return {
         "url": url,
         "title":title,
         "links": links,
-        "words": words,
+        "words_freq": words_freq,
     }
 
 def crawl_many(seed_url: str, max_pages: int = 10):

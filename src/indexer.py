@@ -3,8 +3,7 @@ import json
 from collections import defaultdict
 
 def build_index(data_folder="output") -> dict:
-    index = defaultdict(set)
-    
+    index = defaultdict(lambda: defaultdict(int))
     
     for filename in os.listdir(data_folder):
         if not filename.endswith(".json"):
@@ -16,12 +15,12 @@ def build_index(data_folder="output") -> dict:
             page = json.load(f)
         
         url = page["url"]
-        words = page["words"]
+        words_freq = page["words_freq"]
         
-        for word in words:
-            index[word].add(url)
+        for word, freq in words_freq.items():
+            index[word][url] += freq
     
-    final_index = {word: list(urls) for word, urls in index.items()}
+    final_index = {word: dict(urls) for word, urls in index.items()}
     
     return final_index
 
