@@ -25,7 +25,7 @@ while True:
     if query.lower() in ["exit", "quit"]:
         break
 
-    matches = search("python search", index)
+    matches = search(query, index)
 
     if matches:
         for url, score in matches:

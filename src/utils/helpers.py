@@ -30,7 +30,19 @@ STOP_WORDS = set([
 ])
 
 def extract_words(soup: BeautifulSoup) -> dict:
-    raw_text = soup.get_text(separator=" ")
+    # Remove script, style, nav, header, and footer elements
+    for element in soup(["script", "style", "nav", "header", "footer"]):
+        element.decompose()
+
+    # Get text from the main content, or body, or the whole page
+    main_content = soup.find("main")
+    if main_content:
+        raw_text = main_content.get_text(separator=" ")
+    elif soup.body:
+        raw_text = soup.body.get_text(separator=" ")
+    else:
+        raw_text = soup.get_text(separator=" ")
+        
     clean_text = re.sub(r"[^a-zA-Z0-9\s]", "", raw_text)
     clean_text = clean_text.lower()
     words = clean_text.split()

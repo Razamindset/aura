@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 from utils.helpers import save_page_data, extract_links, extract_words
+import random
 
 def crawl_page(url: str)-> dict:
     try:
@@ -11,11 +12,16 @@ def crawl_page(url: str)-> dict:
         return None    
     
     soup = BeautifulSoup(response.text, 'html.parser')
+
+    # Check for english language
+    html_tag = soup.find('html')
+    if html_tag and html_tag.get('lang') and not html_tag.get('lang').lower().startswith('en'):
+        print(f"Skipping non-English page: {url}")
+        return None
     
     title = soup.title.string if soup.title else ""
     links = extract_links(soup, url)
     words_freq = extract_words(soup)
-    
     
     return {
         "url": url,
@@ -24,27 +30,52 @@ def crawl_page(url: str)-> dict:
         "words_freq": words_freq,
     }
 
-def crawl_many(seed_url: str, max_pages: int = 10):
+def crawl_many(seed_urls, max_pages: int = 10, jump_every=5):
     visited = set()
-    queue = [seed_url]
+    queue = list(seed_urls)
+    all_seen_urls = set(queue)
+    crawl_count = 0
     
     while queue and len(visited) < max_pages:
-        url = queue.pop()
-        
+
+        if crawl_count > 0 and crawl_count % jump_every == 0:
+
+            unseen = list(all_seen_urls - visited)
+
+            if unseen:
+                url = random.choice(unseen)
+                print(f"🌐 Jumping randomly to: {url}")
+
+            else:
+                url = queue.pop(0)
+                
+        else:
+            url = queue.pop(0)
+
         if url in visited:
             continue
-        
-        print(f"[{len(visited) + 1}] Crawling: {url}")
+
+        print(f"[{len(visited)+1}] Crawling: {url}")
         page = crawl_page(url)
-        
+
         if not page:
             continue
-        
+
         save_page_data(page)
         visited.add(url)
-        
+        crawl_count += 1
+
+        # Add new links to queue and all_seen_urls
         for link in page['links']:
             if link not in visited and link not in queue:
                 queue.append(link)
+                all_seen_urls.add(link)
 
-crawl_many("https://en.wikipedia.org/", max_pages=10)
+seeds = [
+    "https://en.wikipedia.org/wiki/Web_crawler",
+    "https://www.python.org/",
+    "https://google.com",
+    "https://github.com",
+]
+
+crawl_many(seed_urls=seeds, max_pages=10)
