@@ -1,11 +1,14 @@
 import json
 from collections import defaultdict
 
-def load_index(filepath="index.json"):
-    with open(filepath, "r", encoding="utf-8") as f:
+INDEX_PATH = "index.json"
+index = None
+
+def load_index():
+    with open(INDEX_PATH, "r", encoding="utf-8") as f:
         return json.load(f)
     
-def search(query: str, index: dict):
+def search(query: str):
     words = query.lower().split()
     scores = defaultdict(int)
     
@@ -16,19 +19,15 @@ def search(query: str, index: dict):
     
     ranked = sorted(scores.items(),  key=lambda x: x[1], reverse=True)
 
-    return ranked
+    results = []
+    for url, score in ranked:
+        # In a real scenario, you'd fetch the title and description from a metadata store
+        # For now, using dummy data
+        results.append({
+            'title': f'Search Result for {url}',
+            'url': url,
+            'description': f'This is a dummy description for {url} with a score of {score}.'
+        })
+    return results
 
-index = load_index("index.json")
-
-while True:
-    query = input("Search Aura: ").strip()
-    if query.lower() in ["exit", "quit"]:
-        break
-
-    matches = search(query, index)
-
-    if matches:
-        for url, score in matches:
-            print(f"{url}  (score: {score})")
-    else:
-        print("No results.")
+index = load_index()

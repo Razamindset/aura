@@ -48,7 +48,7 @@ def crawl_many(seed_urls, max_pages: int = 10, jump_every=5):
 
             else:
                 url = queue.pop(0)
-                
+
         else:
             url = queue.pop(0)
 
@@ -76,6 +76,9 @@ seeds = [
     "https://www.python.org/",
     "https://google.com",
     "https://github.com",
+    "https://github.com/Razamindset",
+    "https://myportfolio-mu-coral.vercel.app/",
+    "https://github.com/Ali-Raza764",
 ]
 
 crawl_many(seed_urls=seeds, max_pages=10)
