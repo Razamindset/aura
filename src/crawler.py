@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from utils.helpers import save_page_data, extract_links, extract_words
 import random
+from urllib.parse import urljoin
 
 def crawl_page(url: str)-> dict:
     try:
@@ -9,8 +10,8 @@ def crawl_page(url: str)-> dict:
         response.raise_for_status()
     except Exception as e:
         print(f"Cannot fetch url: {e}")
-        return None    
-    
+        return None
+
     soup = BeautifulSoup(response.text, 'html.parser')
 
     # Check for english language
@@ -18,14 +19,27 @@ def crawl_page(url: str)-> dict:
     if html_tag and html_tag.get('lang') and not html_tag.get('lang').lower().startswith('en'):
         print(f"Skipping non-English page: {url}")
         return None
-    
+
     title = soup.title.string if soup.title else ""
+
+    description = ""
+    meta_tag = soup.find('meta', attrs={'name': 'description'})
+    if meta_tag and 'content' in meta_tag.attrs:
+        description = meta_tag['content']
+        
+    favicon = ""
+    icon_link = soup.find("link", rel=lambda x: x and 'icon' in x.lower())
+    if icon_link and 'href' in icon_link.attrs:
+        favicon = urljoin(url, icon_link['href'])
+        
     links = extract_links(soup, url)
     words_freq = extract_words(soup)
-    
+
     return {
         "url": url,
-        "title":title,
+        "title": title,
+        "favicon": favicon,
+        "description": description,
         "links": links,
         "words_freq": words_freq,
     }
@@ -35,7 +49,7 @@ def crawl_many(seed_urls, max_pages: int = 10, jump_every=5):
     queue = list(seed_urls)
     all_seen_urls = set(queue)
     crawl_count = 0
-    
+
     while queue and len(visited) < max_pages:
 
         if crawl_count > 0 and crawl_count % jump_every == 0:

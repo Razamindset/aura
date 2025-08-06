@@ -75,6 +75,16 @@ h1 {
     margin-top: 0;
     margin-bottom: 8px;
     color: #007bff;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: start;
+    gap: 5px;
+}
+
+.result-item img {
+    height: 25px;
+    width: 25px;
 }
 
 .result-item h3 a {
