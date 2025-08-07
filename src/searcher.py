@@ -38,7 +38,7 @@ def load_index():
         documents = {}
         inverted_index = {}
 
-# --- TF-IDF Search Logic ---
+# TF-IDF Search
 def search(query: str):
     """
     Performs a search using the TF-IDF algorithm.

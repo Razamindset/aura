@@ -16,7 +16,7 @@ FILE_EXTENSIONS = [
     '.mp4', '.avi', '.mov', '.wmv', '.mkv', '.webm', '.flv', '.m4v',
 
     # Code & Markup
-    '.html', '.htm', '.css', '.js', '.jsx', '.ts', '.tsx',
+    '.css', '.js', '.jsx', '.ts', '.tsx',
     '.py', '.java', '.cpp', '.c', '.cs', '.php', '.rb', '.go', '.rs',
     '.json', '.xml', '.yml', '.yaml', '.sh', '.bat', '.pl', 'ps'
 
