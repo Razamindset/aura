@@ -19,11 +19,11 @@ A simple reverse index for words is built along with icon, title, desc info for 
 Simple TF-IDF Search
 
 ```python
-    idf = math.log(total_documents / (1 + num_docs_with_word))
+idf = math.log(total_documents / (1 + num_docs_with_word))
 
-    # Go through the list of [doc_id, term_frequency] for the word
-    for doc_id_str, tf in inverted_index[word]:
-        scores[str(doc_id_str)] += tf * idf
+# Go through the list of [doc_id, term_frequency] for the word
+for doc_id_str, tf in inverted_index[word]:
+    scores[str(doc_id_str)] += tf * idf
 ```
 
 ### Website
