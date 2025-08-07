@@ -8,12 +8,35 @@ import time
 import os
 from utils.constants import LANGUAGE_CODES, FILE_EXTENSIONS, SEEDS
 
-def can_fetch_url(url: str, user_agent) -> bool:
-    pass
+robots_parsers = {}
+
+def can_fetch_url(url: str, user_agent="*") -> bool:
+    full_domain = urlparse(url).scheme + "://" + urlparse(url).netloc
+
+    if full_domain not in robots_parsers:
+        robots_url = full_domain + "/robots.txt"
+        
+        rp = urllib.robotparser.RobotFileParser()
+        
+        try:
+            rp.set_url(robots_url)
+            rp.read()
+        except Exception as e: 
+            rp = None
+            print(e)
+        
+        robots_parsers[full_domain] = rp
+    
+    rp = robots_parsers.get(full_domain)
+    
+    if rp is None:
+        return True
+    
+    return rp.can_fetch(user_agent, url)
 
 def crawl_page(url: str)-> dict:
     try:
-        response  = requests.get(url, timeout=5)
+        response  = requests.get(url, timeout=5, headers={ 'User-Agent': "MyCrawler"})
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
         print(f"Cannot fetch url: {e}")
@@ -59,7 +82,7 @@ def crawl_many(seed_urls, max_pages: int = 10, jump_every=5, domain_cooldown_s: 
     all_seen_urls = set(queue)
     crawl_count = 0
     
-    # --- New: Dictionary to track the last time a domain was crawled ---
+    # Track the last time a domain was crawled
     domain_last_crawled = {}
 
     output_file = "output/crawled_data.jsonl"
@@ -93,6 +116,11 @@ def crawl_many(seed_urls, max_pages: int = 10, jump_every=5, domain_cooldown_s: 
             continue
 
         print(f"[{len(visited)+1}] Crawling: {url}")
+        
+        if not can_fetch_url(url, user_agent="MyCrawler"):
+            print("cannot fetch url by robots.txt")
+            continue
+        
         page = crawl_page(url)
 
         if not page:

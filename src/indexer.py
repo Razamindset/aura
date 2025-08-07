@@ -14,7 +14,6 @@ def build_index(data_folder="output") -> dict:
     with open(file_path, 'r', encoding="utf-8") as f:
         for line in f:
             try:
-                print(line)
                 page = json.loads(line)
             except Exception as e:
                 print(e)
