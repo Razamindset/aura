@@ -56,11 +56,13 @@ def extract_words(soup: BeautifulSoup) -> dict:
 
 def save_page_data(page_data: dict, output_directory: str = "output"):
     os.makedirs(output_directory, exist_ok=True)
+        
+    file_name = "crawled_data.jsonl"
 
-    url = page_data['url']
-    filename = hashlib.md5(url.encode('utf-8')).hexdigest() + ".json"
+    file_path = os.path.join(output_directory, file_name)
 
-    file_path = os.path.join(output_directory, filename)
-
-    with open(file_path, "w", encoding="utf-8") as f:
-        json.dump(page_data, f, indent=2, ensure_ascii=False)
+    with open(file_path, "a", encoding="utf-8") as f:
+        # Convert the dictionary to a compact JSON string.
+        json_string = json.dumps(page_data, ensure_ascii=False)
+        # Write the string followed by a newline character.
+        f.write(json_string + "\n")

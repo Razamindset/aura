@@ -1,39 +1,82 @@
 import json
+import math
 from collections import defaultdict
-import hashlib
 import os
 
-INDEX_PATH = "index.json"
-index = None
+# --- Configuration ---
+INDEX_DIR = "output"
+DOCUMENTS_PATH = os.path.join(INDEX_DIR, "documents.json")
+INVERTED_INDEX_PATH = os.path.join(INDEX_DIR, "inverted_index.json")
 
-with open(INDEX_PATH, "r", encoding="utf-8") as f:
-    index = json.load(f)
+# --- Global Variables ---
+documents = None
+inverted_index = None
+total_documents = 0
 
+# --- Load the index files ---
+def load_index():
+    """Loads the documents and inverted index from JSON files into memory."""
+    global documents, inverted_index, total_documents
+    
+    print("Loading search index...")
+    try:
+        with open(DOCUMENTS_PATH, "r", encoding="utf-8") as f:
+            documents = json.load(f)
+        
+        with open(INVERTED_INDEX_PATH, "r", encoding="utf-8") as f:
+            inverted_index = json.load(f)
+            
+        total_documents = len(documents)
+        print(f"Index loaded successfully. {total_documents} documents.")
+        
+    except FileNotFoundError:
+        print("Error: Index files not found. Please run the indexer first.")
+        documents = {}
+        inverted_index = {}
+    except json.JSONDecodeError:
+        print("Error: Could not decode index files. They may be corrupted.")
+        documents = {}
+        inverted_index = {}
+
+# --- TF-IDF Search Logic ---
 def search(query: str):
-    words = query.lower().split()
-    scores = defaultdict(int)
+    """
+    Performs a search using the TF-IDF algorithm.
+    1. Calculates scores for documents based on the query.
+    2. Ranks documents by score.
+    3. Returns the top results with their details.
+    """
+    if not documents or not inverted_index:
+        print("Search index is not loaded.")
+        return []
 
-    for word in words:
-        if word in index:
-            for url, freq in index[word].items():
-                scores[url] += freq  # Higher freq = more relevant
+    query_words = query.lower().split()
+    
+    scores = defaultdict(float)
+    
+    for word in query_words:
+        if word in inverted_index:
+            num_docs_with_word = len(inverted_index[word])
+            idf = math.log(total_documents / (1 + num_docs_with_word))
+            
+            # Go through the list of [doc_id, term_frequency] for the word
+            for doc_id_str, tf in inverted_index[word]:
+                scores[str(doc_id_str)] += tf * idf
 
-    ranked = sorted(scores.items(),  key=lambda x: x[1], reverse=True)
 
+    ranked_doc_ids = sorted(scores.keys(), key=lambda doc_id: scores[doc_id], reverse=True)
+    
     results = []
-    # Loop over the results and add title and description for each page
-    for url, score in ranked:
-        filename = hashlib.md5(url.encode('utf-8')).hexdigest() + ".json"
-        file_path = os.path.join("output", filename)
-
-        with open(file_path, "r", encoding="utf-8") as f:
-            file = json.load(f)
-
+    for doc_id in ranked_doc_ids:
+        doc_details = documents.get(doc_id)
+        if doc_details:
             results.append({
-                'title': file['title'],
-                'url': url,
-                'description': file['description'],
-                'icon_url': file['favicon']
+                'title': doc_details.get('title', 'No Title'),
+                'url': doc_details.get('url'),
+                'description': doc_details.get('description'),
+                'icon_url': doc_details.get('favicon')
             })
-
+            
     return results
+
+load_index()

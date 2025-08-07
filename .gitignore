@@ -2,3 +2,4 @@ venv
 output
 __pycache__
 index.json
+crawled_data.jsonl
