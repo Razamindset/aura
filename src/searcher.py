@@ -4,7 +4,7 @@ from collections import defaultdict
 import os
 
 # --- Configuration ---
-INDEX_DIR = "output"
+INDEX_DIR = "files"
 DOCUMENTS_PATH = os.path.join(INDEX_DIR, "documents.json")
 INVERTED_INDEX_PATH = os.path.join(INDEX_DIR, "inverted_index.json")
 

@@ -218,4 +218,6 @@ SEEDS = [
     "https://quora.com/",
     "https://producthunt.com/",
     "https://lobste.rs/",
-    ]
+]
+
+CRAWLER_STATE_FILE = "crawler_state_file.json"

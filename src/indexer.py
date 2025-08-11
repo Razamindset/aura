@@ -2,7 +2,7 @@ import os
 import json
 from collections import defaultdict
 
-def build_index(data_folder="output") -> dict:    
+def build_index(data_folder="files") -> dict:    
     documents = {}
     inverted_index = defaultdict(list)
     doc_id = 0
@@ -39,17 +39,17 @@ def build_index(data_folder="output") -> dict:
     return documents, inverted_index
             
 
-def save_index(documents, inverted_index, output_dir="output"):
+def save_index(documents, inverted_index, files_dir="files"):
     if documents is None or inverted_index is None:
         print("Index building failed. Nothing to save.")
         return
  
-    # Ensure the output directory exists.
-    os.makedirs(output_dir, exist_ok=True)
+    # Ensure the files directory exists.
+    os.makedirs(files_dir, exist_ok=True)
  
     # Define file paths
-    docs_filepath = os.path.join(output_dir, "documents.json")
-    index_filepath = os.path.join(output_dir, "inverted_index.json")
+    docs_filepath = os.path.join(files_dir, "documents.json")
+    index_filepath = os.path.join(files_dir, "inverted_index.json")
    
     # Save the documents dictionary
     with open(docs_filepath, "w", encoding="utf-8") as f:
@@ -65,5 +65,5 @@ def save_index(documents, inverted_index, output_dir="output"):
     
 
 if __name__ == "__main__":
-    docs, index = build_index("output")
+    docs, index = build_index("files")
     save_index(docs, index)

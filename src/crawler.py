@@ -1,38 +1,17 @@
 import requests
 from bs4 import BeautifulSoup
-from utils.helpers import save_page_data, extract_links, extract_words
+from utils.helpers import save_page_data, extract_links, extract_words, can_fetch_url
 import random
 from urllib.parse import urljoin, urlparse
-import urllib.robotparser
 import time
 import os
-from utils.constants import LANGUAGE_CODES, FILE_EXTENSIONS, SEEDS
+from utils.constants import LANGUAGE_CODES, FILE_EXTENSIONS, SEEDS, CRAWLER_STATE_FILE
+import json
 
-robots_parsers = {}
+file_path = os.path.join("files", CRAWLER_STATE_FILE)
 
-def can_fetch_url(url: str, user_agent="*") -> bool:
-    full_domain = urlparse(url).scheme + "://" + urlparse(url).netloc
-
-    if full_domain not in robots_parsers:
-        robots_url = full_domain + "/robots.txt"
-        
-        rp = urllib.robotparser.RobotFileParser()
-        
-        try:
-            rp.set_url(robots_url)
-            rp.read()
-        except Exception as e: 
-            rp = None
-            print(e)
-        
-        robots_parsers[full_domain] = rp
-    
-    rp = robots_parsers.get(full_domain)
-    
-    if rp is None:
-        return True
-    
-    return rp.can_fetch(user_agent, url)
+# Ensure the directory exists
+os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
 def crawl_page(url: str)-> dict:
     try:
@@ -74,37 +53,50 @@ def crawl_page(url: str)-> dict:
         "words_freq": words_freq,
     }
     
-    
 
-def crawl_many(seed_urls, max_pages: int = 10, jump_every=5, domain_cooldown_s: int = 5):
-    visited = set()
-    queue = list(seed_urls)
-    all_seen_urls = set(queue)
+def save_crawler_state(visited, queue):
+    state = {
+        "visited": list(visited),
+        "queue": list(queue),
+    }
+
+    with open(file_path, 'w', encoding='utf-8') as f:
+        json.dump(state, f)
+    
+    print("Crawler state Saved successfully")
+
+def load_crawler_state():
+    """Loads the crawler state from a JSON file. If not found, initializes with seeds."""
+    if not os.path.exists(file_path):
+        print("No crawler state file found")
+        return set(), SEEDS
+    
+    with open(file_path, 'r', encoding='utf-8') as f:
+        state = json.load(f)
+        return set(state['visited']), list(state['queue'])
+
+
+def crawl_many(max_pages: int = 10, jump_every=5, domain_cooldown_s: int = 5, save_state_every=10):
+
+    visited, queue = load_crawler_state()
+
     crawl_count = 0
     
     # Track the last time a domain was crawled
     domain_last_crawled = {}
 
-    output_file = "output/crawled_data.jsonl"
-    if os.path.exists(output_file):
-        os.remove(output_file)
-        print(f"Removed old data file: {output_file}")
-
     while queue and len(visited) < max_pages:
 
         if crawl_count > 0 and crawl_count % jump_every == 0:
-            unseen = list(all_seen_urls - visited)
-            if unseen:
-                url = random.choice(unseen)
-                print(f"\n🌐 Jumping randomly to: {url}\n")
-            else:
-                url = queue.pop(0)
+            url = random.choice(queue)
         else:
             url = queue.pop(0)
 
+        # Already done 
         if url in visited:
             continue
         
+        # Check cooldown for domains
         domain = urlparse(url).netloc
         current_time = time.time()
         last_crawled_time = domain_last_crawled.get(domain, 0)
@@ -115,17 +107,20 @@ def crawl_many(seed_urls, max_pages: int = 10, jump_every=5, domain_cooldown_s: 
             queue.append(url)
             continue
 
+        # Loggs 
         print(f"[{len(visited)+1}] Crawling: {url}")
         
         if not can_fetch_url(url, user_agent="MyCrawler"):
             print("cannot fetch url by robots.txt")
             continue
         
+        # Do the actual stuff
         page = crawl_page(url)
 
         if not page:
             continue
 
+        # Save the data
         save_page_data(page)
         visited.add(url)
         crawl_count += 1
@@ -145,10 +140,12 @@ def crawl_many(seed_urls, max_pages: int = 10, jump_every=5, domain_cooldown_s: 
             if parsed_url.hostname and parsed_url.hostname.split('.')[0] in LANGUAGE_CODES:
                 continue
             
-            if link not in all_seen_urls:
+            if link not in queue:
                 queue.append(link)
-                all_seen_urls.add(link)
+        
+        if crawl_count % save_state_every == 0:
+            save_crawler_state(visited, queue)
 
 if __name__ == "__main__":
-  
-    crawl_many(seed_urls=SEEDS, max_pages=1000, domain_cooldown_s=3)
+    # The crawler will save it state every 10 urls so even if the crawler is seitched off it will start again fromt he same spot.   
+    crawl_many(max_pages=100000, domain_cooldown_s=3, save_state_every=5)
