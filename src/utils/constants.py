@@ -1,3 +1,14 @@
+CRAWLER_STATE_FILE = "crawler_state_file.json"
+FILES_DIRECTORY="files"
+CRAWLED_DATA_FILE="crawled_data.jsonl"
+
+STOP_WORDS = set([
+    "a", "an", "the", "and", "or", "but", "if", "while", "is", "are", "was", "were", "in", "on", "for", "to", "of",
+    "at", "by", "with", "as", "it", "this", "that", "these", "those", "i", "you", "he", "she", "they", "we", "me",
+    "my", "your", "our", "their", "his", "her", "its", "be", "been", "being", "do", "does", "did", "will", "would",
+    "can", "could", "should", "shall", "not"
+])
+
 FILE_EXTENSIONS = [
     # Images
     '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.svg', '.webp', '.ico',
@@ -219,5 +230,3 @@ SEEDS = [
     "https://producthunt.com/",
     "https://lobste.rs/",
 ]
-
-CRAWLER_STATE_FILE = "crawler_state_file.json"

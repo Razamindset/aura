@@ -60,10 +60,12 @@ def save_crawler_state(visited, queue):
         "queue": list(queue),
     }
 
-    with open(file_path, 'w', encoding='utf-8') as f:
-        json.dump(state, f)
-    
-    print("Crawler state Saved successfully")
+    try:
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(state, f)
+        print("Success: Crawler state Saved successfully")
+    except Exception as e:
+        print("Error: Saving Crawler State")
 
 def load_crawler_state():
     """Loads the crawler state from a JSON file. If not found, initializes with seeds."""
@@ -71,9 +73,13 @@ def load_crawler_state():
         print("No crawler state file found")
         return set(), SEEDS
     
-    with open(file_path, 'r', encoding='utf-8') as f:
-        state = json.load(f)
-        return set(state['visited']), list(state['queue'])
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            state = json.load(f)
+            return set(state['visited']), list(state['queue'])
+    
+    except Exception as e:
+        return set(), SEEDS,
 
 
 def crawl_many(max_pages: int = 10, jump_every=5, domain_cooldown_s: int = 5, save_state_every=10):
@@ -140,6 +146,7 @@ def crawl_many(max_pages: int = 10, jump_every=5, domain_cooldown_s: int = 5, sa
             if parsed_url.hostname and parsed_url.hostname.split('.')[0] in LANGUAGE_CODES:
                 continue
             
+            # This check mighst become slower as the list grows so we would need a set for this
             if link not in queue:
                 queue.append(link)
         
