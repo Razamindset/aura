@@ -14,7 +14,7 @@ from nltk.tokenize import word_tokenize
 from .indexer import Indexer
 
 class Crawler():
-    def __init__(self, seed_urls: list = SEEDS, save_state_every = 20, domain_cooldown_s = 5 , jump_every = 20, index_every_n_crawls = 100):
+    def __init__(self, seed_urls: list = SEEDS, save_state_every = 20, domain_cooldown_s = 5 , jump_every = 20, index_every_n_crawls = 100, request_timeout = 10):
 
         # Configration
         self.seed_urls = seed_urls
@@ -26,6 +26,7 @@ class Crawler():
         self.jump_every = jump_every
         self.user_agent = "AuraCrawler"
         self.index_every_n_crawls = index_every_n_crawls
+        self.request_timeout = request_timeout
 
         # NLP Tools
         self.stemmer = PorterStemmer()
@@ -90,23 +91,28 @@ class Crawler():
 
         if full_domain not in self.robots_parsers:
             robots_url = full_domain + "/robots.txt"
-            
             rp = urllib.robotparser.RobotFileParser()
 
             try:
-                rp.set_url(robots_url)
-                rp.read()
-            except Exception as e: 
+                response = requests.get(robots_url, timeout=self.request_timeout, headers={'User-Agent': self.user_agent})
+                response.raise_for_status()
+                rp.parse(response.text.splitlines())
+            except requests.exceptions.RequestException as e:
+                print(f"Error fetching or parsing robots.txt for {full_domain}: {e}")
+                # If we can't fetch or parse robots.txt, assume we can crawl.
+                # Setting rp to None and then handling it below will achieve this.
                 rp = None
-                print(e)
-            
+            except Exception as e:
+                print(f"An unexpected error occurred while processing robots.txt for {full_domain}: {e}")
+                rp = None
+
             self.robots_parsers[full_domain] = rp
-        
+
         rp = self.robots_parsers.get(full_domain)
-        
+
         if rp is None:
             return True
-        
+
         return rp.can_fetch(self.user_agent, url)
 
     def _save_data(self, page_data: dict):
@@ -123,7 +129,7 @@ class Crawler():
         last_crawled_time = self.crawled_times.get(domain, 0)
 
         if current_time - last_crawled_time < self.domain_cooldown_s:
-            print(f"Skipping: {domain} for cooldown: Re-queueing {url}")
+            print(f"Skipping: {domain} for cooldown: Re-queueing {url}") # Too noisy
             self.queue.append(url)
             return True
         
@@ -171,8 +177,11 @@ class Crawler():
 
     def _crawl_page(self, url):
         try:
-            response  = requests.get(url, timeout=5, headers={ 'User-Agent': self.user_agent})
+            response  = requests.get(url, timeout=self.request_timeout, headers={ 'User-Agent': self.user_agent})
             response.raise_for_status()
+        except requests.exceptions.Timeout:
+            print(f"Timeout error for url: {url}")
+            return None
         except requests.exceptions.RequestException as e:
             print(f"Cannot fetch url: {e}")
             return None
@@ -208,10 +217,10 @@ class Crawler():
             return None
         
         if self.crawl_count > 0 and self.crawl_count % self.jump_every == 0:
+            # Jump to a random URL in the queue to avoid getting stuck in a single domain
             idx = random.randrange(len(self.queue))
             url = self.queue[idx]
             del self.queue[idx]
-        
         else:
             url = self.queue.popleft()
         
@@ -221,12 +230,18 @@ class Crawler():
         while self.queue:
             url = self._get_next_url()
 
-            if url is None or url in self.visited:
+            if url is None:
+                print("Queue is empty. Exiting crawler.")
+                break
+
+            if url in self.visited:
+                print(f"Skipping already visited URL: {url}")
                 continue
 
             domain = urlparse(url).netloc
 
             if self._handle_cooldown(domain, url):
+                print(f"Domain cooldown active for {domain}. Re-queueing {url}")
                 continue
             
             if not self._can_fetch(url):
@@ -238,33 +253,40 @@ class Crawler():
             page_data = self._crawl_page(url)
 
             if not page_data:
+                print(f"Failed to crawl or parse page: {url}")
                 continue
 
             self._save_data(page_data)
+            print(f"Saved data for: {url}")
 
             self.visited.add(url)
 
             self.crawl_count += 1
+            print(f"Crawl count: {self.crawl_count}")
 
             self.crawled_times[domain] = time.time()
 
             # Add the newly discovered urls to the queue
+            new_links_added = 0
             for link in page_data['links']:
             
                 # skip images and pdf files etc.
                 if any(link.lower().endswith(ext) for ext in  FILE_EXTENSIONS):
+                    # print(f"Skipping link due to file extension: {link}")
                     continue
 
                 # Add a check to skip domains like ar.wikipedia.org which are likely not english
                 parsed_url = urlparse(link)
                 if parsed_url.hostname and parsed_url.hostname.split('.')[0] in LANGUAGE_CODES:
+                    # print(f"Skipping link due to language code in domain: {link}")
                     continue
             
-                # This check mighst become slower as the list grows so we would need a set for this
                 if link not in self.all_seen_urls:
                     self.all_seen_urls.add(link)
                     self.queue.append(link)
-        
+                    new_links_added += 1
+            print(f"Discovered {new_links_added} new links from {url}")
+
             if self.crawl_count % self.save_state_every == 0:
                 self._save_state()
 
@@ -272,6 +294,9 @@ class Crawler():
                 print(f"Triggering indexer after {self.crawl_count} crawls...")
                 indexer = Indexer()
                 indexer.run()
+
+            print(f"Current queue size: {len(self.queue)}")
+            print(f"Visited URLs: {len(self.visited)}")
 
 
             

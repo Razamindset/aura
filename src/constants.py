@@ -7,7 +7,7 @@ REVERSE_INDEX_FILE = "inverted_index.json"
 DOCS_FILE = "documents.json"
 
 STOP_WORDS = set([
-    "a", "an", "the", "and", "or", "but", "if", "while", "is", "are", "was", "were", "in", "on", "for", "to", "of",
+    "a", "an", "the", "and", "or", "but", "if", "while", "is", "are", "was", "were", "in", "on", "for", "from", "to", "of",
     "at", "by", "with", "as", "it", "this", "that", "these", "those", "i", "you", "he", "she", "they", "we", "me",
     "my", "your", "our", "their", "his", "her", "its", "be", "been", "being", "do", "does", "did", "will", "would",
     "can", "could", "should", "shall", "not"
