@@ -1,4 +1,4 @@
-from constants import SEEDS, CRAWLER_STATE_FILE, FILES_DIRECTORY, CRAWLED_DATA_FILE, FILE_EXTENSIONS, LANGUAGE_CODES, STOP_WORDS
+from .constants import SEEDS, CRAWLER_STATE_FILE, FILES_DIRECTORY, CRAWLED_DATA_FILE, FILE_EXTENSIONS, LANGUAGE_CODES, STOP_WORDS
 from collections import deque, Counter
 import os
 import json
@@ -9,9 +9,12 @@ import time
 import requests
 from bs4 import BeautifulSoup
 import re
+from nltk.stem import PorterStemmer
+from nltk.tokenize import word_tokenize
+from .indexer import Indexer
 
 class Crawler():
-    def __init__(self, seed_urls: list = SEEDS, save_state_every = 20, domain_cooldown_s = 5 , jump_every = 20):
+    def __init__(self, seed_urls: list = SEEDS, save_state_every = 20, domain_cooldown_s = 5 , jump_every = 20, index_every_n_crawls = 100):
 
         # Configration
         self.seed_urls = seed_urls
@@ -22,6 +25,10 @@ class Crawler():
         self.domain_cooldown_s = domain_cooldown_s
         self.jump_every = jump_every
         self.user_agent = "AuraCrawler"
+        self.index_every_n_crawls = index_every_n_crawls
+
+        # NLP Tools
+        self.stemmer = PorterStemmer()
 
         # State
         self.queue = deque()
@@ -136,14 +143,13 @@ class Crawler():
         else:
             raw_text = soup.get_text(separator=" ")
 
-        clean_text = re.sub(r"[^a-zA-Z0-9\s]", "", raw_text)
-        clean_text = clean_text.lower()
-        words = clean_text.split()
+        words = word_tokenize(raw_text)
+        stemmed_words = [self.stemmer.stem(word.lower()) for word in words]
 
         # Clean the words before returning
         filtered = [
-            word for word in words
-            if word not in STOP_WORDS and len(word) >= 3
+            word for word in stemmed_words
+            if word.isalpha() and word not in STOP_WORDS and len(word) >= 3
         ]
         return dict(Counter(filtered))
 
@@ -261,6 +267,11 @@ class Crawler():
         
             if self.crawl_count % self.save_state_every == 0:
                 self._save_state()
+
+            if self.crawl_count % self.index_every_n_crawls == 0:
+                print(f"Triggering indexer after {self.crawl_count} crawls...")
+                indexer = Indexer()
+                indexer.run()
 
 
             

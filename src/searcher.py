@@ -2,13 +2,16 @@ import json
 import math
 from collections import defaultdict
 import os
-from constants import DOCS_FILE, REVERSE_INDEX_FILE, FILES_DIRECTORY
+from .constants import DOCS_FILE, REVERSE_INDEX_FILE, FILES_DIRECTORY
+from nltk.stem import PorterStemmer
+from nltk.tokenize import word_tokenize
 
 class Searcher:
     def __init__(self):
         self.documents = None
         self.inverted_index = None
         self.total_documents = 0
+        self.stemmer = PorterStemmer()
         self._load_index()
 
     def _load_index(self):
@@ -45,6 +48,10 @@ class Searcher:
             return []
 
         query_words = query.lower().split()
+
+        query_tokens = word_tokenize(query.lower())
+
+        query_words = [self.stemmer.stem(word) for word in query_tokens]
         
         scores = defaultdict(float)
         

@@ -26,6 +26,14 @@ for doc_id_str, tf in inverted_index[word]:
     scores[str(doc_id_str)] += tf * idf
 ```
 
+### Stemming
+
+Stem the words while crawling and searching for better results. Like throwing, throwed -> throw
+
+```shell
+python3 -c "import nltk; nltk.download('punkt_tab')"
+```
+
 ### Website
 
 The front end is pretty much vibe coded as there isn't much right now.

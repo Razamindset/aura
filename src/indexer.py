@@ -1,7 +1,7 @@
 import os
 import json
 from collections import defaultdict
-from constants import REVERSE_INDEX_FILE, FILES_DIRECTORY, CRAWLED_DATA_FILE, DOCS_FILE
+from .constants import REVERSE_INDEX_FILE, FILES_DIRECTORY, CRAWLED_DATA_FILE, DOCS_FILE
 
 class Indexer():
     def __init__(self):

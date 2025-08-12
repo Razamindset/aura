@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 from src.searcher import Searcher
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='../templates', static_folder='../static')
 
 # Create a single instance of the Searcher
 searcher = Searcher()
