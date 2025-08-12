@@ -1,7 +1,10 @@
 from flask import Flask, render_template, request, jsonify
-from src.searcher import search as search_query
+from src.searcher import Searcher
 
 app = Flask(__name__)
+
+# Create a single instance of the Searcher
+searcher = Searcher()
 
 @app.route("/")
 def index():
@@ -10,7 +13,7 @@ def index():
 @app.route("/search")
 def search():
     query = request.args.get('query')
-    results = search_query(query)
+    results = searcher.search(query)
     return jsonify(results)
 
 if __name__ == "__main__":

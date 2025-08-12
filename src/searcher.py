@@ -2,81 +2,88 @@ import json
 import math
 from collections import defaultdict
 import os
+from constants import DOCS_FILE, REVERSE_INDEX_FILE, FILES_DIRECTORY
 
-# --- Configuration ---
-INDEX_DIR = "files"
-DOCUMENTS_PATH = os.path.join(INDEX_DIR, "documents.json")
-INVERTED_INDEX_PATH = os.path.join(INDEX_DIR, "inverted_index.json")
+class Searcher:
+    def __init__(self):
+        self.documents = None
+        self.inverted_index = None
+        self.total_documents = 0
+        self._load_index()
 
-# --- Global Variables ---
-documents = None
-inverted_index = None
-total_documents = 0
+    def _load_index(self):
+        """Loads the documents and inverted index from JSON files into memory."""
+        print("Loading search index...")
+        try:
+            with open(os.path.join(FILES_DIRECTORY, DOCS_FILE), "r", encoding="utf-8") as f:
+                self.documents = json.load(f)
+            
+            with open(os.path.join(FILES_DIRECTORY, REVERSE_INDEX_FILE), "r", encoding="utf-8") as f:
+                self.inverted_index = json.load(f)
+                
+            self.total_documents = len(self.documents)
+            print(f"Index loaded successfully. {self.total_documents} documents.")
+            
+        except FileNotFoundError:
+            print("Error: Index files not found. Please run the indexer first.")
+            self.documents = {}
+            self.inverted_index = {}
+        except json.JSONDecodeError:
+            print("Error: Could not decode index files. They may be corrupted.")
+            self.documents = {}
+            self.inverted_index = {}
 
-# --- Load the index files ---
-def load_index():
-    """Loads the documents and inverted index from JSON files into memory."""
-    global documents, inverted_index, total_documents
-    
-    print("Loading search index...")
-    try:
-        with open(DOCUMENTS_PATH, "r", encoding="utf-8") as f:
-            documents = json.load(f)
+    def search(self, query: str):
+        """
+        Performs a search using the TF-IDF algorithm.
+        1. Calculates scores for documents based on the query.
+        2. Ranks documents by score.
+        3. Returns the top results with their details.
+        """
+        if not self.documents or not self.inverted_index:
+            print("Search index is not loaded.")
+            return []
+
+        query_words = query.lower().split()
         
-        with open(INVERTED_INDEX_PATH, "r", encoding="utf-8") as f:
-            inverted_index = json.load(f)
-            
-        total_documents = len(documents)
-        print(f"Index loaded successfully. {total_documents} documents.")
+        scores = defaultdict(float)
         
-    except FileNotFoundError:
-        print("Error: Index files not found. Please run the indexer first.")
-        documents = {}
-        inverted_index = {}
-    except json.JSONDecodeError:
-        print("Error: Could not decode index files. They may be corrupted.")
-        documents = {}
-        inverted_index = {}
+        for word in query_words:
+            if word in self.inverted_index:
+                num_docs_with_word = len(self.inverted_index[word])
+                idf = math.log(self.total_documents / (1 + num_docs_with_word))
+                
+                for doc_id_str, tf in self.inverted_index[word]:
+                    scores[str(doc_id_str)] += tf * idf
 
-# TF-IDF Search
-def search(query: str):
-    """
-    Performs a search using the TF-IDF algorithm.
-    1. Calculates scores for documents based on the query.
-    2. Ranks documents by score.
-    3. Returns the top results with their details.
-    """
-    if not documents or not inverted_index:
-        print("Search index is not loaded.")
-        return []
+        ranked_doc_ids = sorted(scores.keys(), key=lambda doc_id: scores[doc_id], reverse=True)
+        
+        results = []
+        for doc_id in ranked_doc_ids:
+            doc_details = self.documents.get(doc_id)
+            if doc_details:
+                results.append({
+                    'title': doc_details.get('title', 'No Title'),
+                    'url': doc_details.get('url'),
+                    'description': doc_details.get('description'),
+                    'icon_url': doc_details.get('favicon')
+                })
+                
+        return results
 
-    query_words = query.lower().split()
+if __name__ == "__main__":
+    searcher = Searcher()
     
-    scores = defaultdict(float)
-    
-    for word in query_words:
-        if word in inverted_index:
-            num_docs_with_word = len(inverted_index[word])
-            idf = math.log(total_documents / (1 + num_docs_with_word))
-            
-            # Go through the list of [doc_id, term_frequency] for the word
-            for doc_id_str, tf in inverted_index[word]:
-                scores[str(doc_id_str)] += tf * idf
-
-
-    ranked_doc_ids = sorted(scores.keys(), key=lambda doc_id: scores[doc_id], reverse=True)
-    
-    results = []
-    for doc_id in ranked_doc_ids:
-        doc_details = documents.get(doc_id)
-        if doc_details:
-            results.append({
-                'title': doc_details.get('title', 'No Title'),
-                'url': doc_details.get('url'),
-                'description': doc_details.get('description'),
-                'icon_url': doc_details.get('favicon')
-            })
-            
-    return results
-
-load_index()
+    while True:
+        query = input("Enter search query (or 'exit' to quit): ")
+        if query.lower() == 'exit':
+            break
+        
+        results = searcher.search(query)
+        
+        if results:
+            print(f"Found {len(results)} results:")
+            for i, result in enumerate(results[:10], 1): # Display top 10
+                print(f"{i}. {result['title']} ({result['url']})")
+        else:
+            print("No results found.")
