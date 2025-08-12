@@ -1,4 +1,4 @@
-from utils.constants import SEEDS, CRAWLER_STATE_FILE, FILES_DIRECTORY, CRAWLED_DATA_FILE, FILE_EXTENSIONS, LANGUAGE_CODES, STOP_WORDS
+from constants import SEEDS, CRAWLER_STATE_FILE, FILES_DIRECTORY, CRAWLED_DATA_FILE, FILE_EXTENSIONS, LANGUAGE_CODES, STOP_WORDS
 from collections import deque, Counter
 import os
 import json
@@ -11,7 +11,7 @@ from bs4 import BeautifulSoup
 import re
 
 class Crawler():
-    def __init__(self, seed_urls: list, save_state_every = 20, domain_cooldown_s = 5 , jump_every = 20):
+    def __init__(self, seed_urls: list = SEEDS, save_state_every = 20, domain_cooldown_s = 5 , jump_every = 20):
 
         # Configration
         self.seed_urls = seed_urls
@@ -266,5 +266,5 @@ class Crawler():
             
 
 if __name__ == "__main__":
-    crawler = Crawler(SEEDS)
+    crawler = Crawler()
     crawler.run()

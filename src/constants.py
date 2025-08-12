@@ -2,6 +2,10 @@ CRAWLER_STATE_FILE = "crawler_state_file.json"
 FILES_DIRECTORY="files"
 CRAWLED_DATA_FILE="crawled_data.jsonl"
 
+# Indexer
+REVERSE_INDEX_FILE = "inverted_index.json"
+DOCS_FILE = "documents.json"
+
 STOP_WORDS = set([
     "a", "an", "the", "and", "or", "but", "if", "while", "is", "are", "was", "were", "in", "on", "for", "to", "of",
     "at", "by", "with", "as", "it", "this", "that", "these", "those", "i", "you", "he", "she", "they", "we", "me",
@@ -229,4 +233,7 @@ SEEDS = [
     "https://quora.com/",
     "https://producthunt.com/",
     "https://lobste.rs/",
+    "https://simple.wikipedia.org/wiki/List_of_countries",
+    "https://www.britannica.com/topic/list-of-games-2072482",
+    "https://pakaf.com/mcq/pakistan-general-knowledge-mcqs/",
 ]
