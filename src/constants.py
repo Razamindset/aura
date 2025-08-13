@@ -156,7 +156,8 @@ LANGUAGE_CODES =  [
     'yo',  # Yoruba
     'zh',  # Chinese (Simplified)
     'zh-TW', # Chinese (Traditional)
-    'zu'   # Zulu
+    'zu',   # Zulu
+    'bxr',
 ]
 
 

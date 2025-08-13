@@ -275,11 +275,14 @@ class Crawler():
                     # print(f"Skipping link due to file extension: {link}")
                     continue
 
-                # Add a check to skip domains like ar.wikipedia.org which are likely not english
+                # Ensure only English language links are followed
                 parsed_url = urlparse(link)
-                if parsed_url.hostname and parsed_url.hostname.split('.')[0] in LANGUAGE_CODES:
-                    # print(f"Skipping link due to language code in domain: {link}")
-                    continue
+                if parsed_url.hostname:
+                    domain_prefix = parsed_url.hostname.split('.')[0]
+                    # If a language code is present and it's not 'en', skip the link
+                    if domain_prefix in LANGUAGE_CODES and domain_prefix != 'en':
+                        print(f"Skipping non-English link: {link}")
+                        continue
             
                 if link not in self.all_seen_urls:
                     self.all_seen_urls.add(link)
